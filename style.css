@@ -20,64 +20,55 @@ h2, h3 {
   font-family: 'Geologica', Arial, sans-serif;
   font-weight: 600;
   color: #1C545F;
-  margin-bottom: 15px;
+  margin: 15px 0;
 }
 
-h3 { margin-top: 30px; }
+.hidden { display: none; }
 
 /* Language screen */
 #lang-screen {
   max-width: 520px;
-  margin: 24px auto 0;
+  margin: 24px auto 12px;
   padding: 20px;
-  background: #FFF9E5;
-  border: 2px solid #FFE389;
+  background: #fff;
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
-#lang-screen h2 { margin-bottom: 8px; }
-#lang-screen p { margin: 0 0 12px; }
-
+#lang-screen h2 { margin-bottom: 12px; }
 .lang-buttons {
   display: flex;
-  flex-wrap: wrap;
   gap: 12px;
   justify-content: center;
-  margin-top: 8px;
+  flex-wrap: wrap;
 }
 .btn-lang {
   padding: 12px 18px;
-  font-size: 15px;
   border: none;
   border-radius: 8px;
-  cursor: pointer;
   background: #00A582;
   color: #fff;
+  font-family: 'Geologica', Arial, sans-serif;
+  font-weight: 600;
+  cursor: pointer;
   transition: background 0.3s, transform 0.2s;
 }
 .btn-lang:hover {
   background: #FFE389;
   color: #282828;
-  transform: scale(1.03);
+  transform: scale(1.05);
 }
 
 /* Start screen */
 #start-screen {
-  margin-top: 24px;
+  margin-top: 20px;
   padding: 20px;
-  background: #FFF;
+  background: #FFF9E5;
   border: 2px solid #FFE389;
   border-radius: 12px;
   max-width: 560px;
   margin-left: auto;
   margin-right: auto;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  text-align: center;
-}
-#start-screen p {
-  font-size: 16px;
-  line-height: 1.6;
-  margin: 12px 0 18px;
 }
 #startBtn {
   font-family: 'Geologica', Arial, sans-serif;
@@ -89,7 +80,7 @@ h3 { margin-top: 30px; }
   border-radius: 8px;
   cursor: pointer;
   font-size: 16px;
-  min-width: 220px;
+  min-width: 200px;
   transition: background 0.3s, transform 0.2s;
 }
 #startBtn:hover {
@@ -98,14 +89,13 @@ h3 { margin-top: 30px; }
   transform: scale(1.05);
 }
 
-/* Quiz container */
+/* Quiz */
 #quiz { margin: 20px 0; }
-.hidden { display: none; }
 
-/* Gallery of options */
+/* Gallery */
 .gallery {
   display: grid;
-  grid-template-columns: repeat(4, 1fr); /* 4 per row desktop */
+  grid-template-columns: repeat(4, 1fr); /* desktop: 4 */
   gap: 16px;
   margin-top: 15px;
 }
@@ -121,7 +111,7 @@ h3 { margin-top: 30px; }
   cursor: pointer;
   padding: 12px;
   transition: background 0.3s, transform 0.2s;
-  text-decoration: none;
+  text-decoration: none; /* для <a> в рекомендаціях */
 }
 .gallery-item:hover {
   background: #FFE389;
@@ -142,7 +132,7 @@ h3 { margin-top: 30px; }
   font-family: 'Inter', Arial, sans-serif;
 }
 
-/* Result block */
+/* Result */
 #result {
   margin-top: 20px;
   padding: 20px;
@@ -157,18 +147,6 @@ h3 { margin-top: 30px; }
   margin: 15px auto;
   display: block;
 }
-#result a {
-  display: flex;
-  justify-content: center;
-  text-decoration: none;
-}
-#result button {
-  display: inline-block;
-  min-width: 200px;
-  margin: 12px auto;
-}
-
-/* Final phrase */
 .final-phrase {
   margin: 15px auto;
   padding: 12px 16px;
@@ -182,14 +160,36 @@ h3 { margin-top: 30px; }
   animation: fadeIn 0.6s ease;
 }
 
-/* Animations */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+/* Order link styled as button */
+a.btn-order {
+  display: inline-block;
+  min-width: 200px;
+  padding: 14px 28px;
+  border-radius: 8px;
+  font-family: 'Geologica', Arial, sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  text-decoration: none;
+  text-align: center;
+  background: #00A582;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.3s, transform 0.2s;
+}
+a.btn-order:hover {
+  background: #FFE389;
+  color: #282828;
+  transform: scale(1.05);
 }
 
-/* Responsive: phones/tablets — 2 per row */
+/* Anim */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive: phones/tablets → 2 in row */
 @media (max-width: 768px) {
   .gallery { grid-template-columns: repeat(2, 1fr); }
-  button, #startBtn { width: 100%; }
+  #startBtn, a.btn-order { width: 100%; }
 }
