@@ -8,13 +8,17 @@ const startTranslations = {
     mainTitle: "Твій кавовий настрій",
     title: "🤖 Наш кавовий AI-асистент підкаже твою наступну улюблену каву ☕️",
     text: "Всього кілька питань — і ми підберемо смак, який пасує до твого настрою.",
-    button: "🚀 Почати"
+    button: "🚀 Почати",
+    also: "✨ Вам також може сподобатися:",
+    order: "Замовити"
   },
   en: {
     mainTitle: "Your Coffee Mood",
     title: "🤖 Our coffee AI assistant will suggest your next favorite cup ☕️",
     text: "Just a few questions — and we’ll match a coffee to your current vibe.",
-    button: "🚀 Let's go"
+    button: "🚀 Let's go",
+    also: "✨ You may also like:",
+    order: "Order"
   }
 };
 
@@ -39,6 +43,7 @@ const endPhrases = {
    Quiz data
 =========================== */
 const questions = [
+  // fun
   {
     text: { uk: "🍰 Улюблений десерт дитинства?", en: "🍰 Childhood favorite dessert?" },
     answers: [
@@ -66,7 +71,6 @@ const questions = [
       { text: { uk: "Деревні/пряні", en: "Woody/spicy" }, tags: { dark: 2 }, img: "images/perfume_wood.png" }
     ]
   },
-  /* фан-питання без ваг */
   {
     text: { uk: "☀️ Яка сцена тобі ближча?", en: "☀️ Which scene is closer to you?" },
     answers: [
@@ -94,7 +98,7 @@ const questions = [
       { text: { uk: "Подорож у нове місто", en: "Travel to a new city" }, tags: {}, img: "images/weekend_trip.png" }
     ]
   },
-  /* ключові */
+  // key
   {
     text: { uk: "🫖 Який метод заварювання тобі ближче?", en: "🫖 Which brew method do you prefer?" },
     answers: [
@@ -115,7 +119,6 @@ const questions = [
   }
 ];
 
-/* Coffee profiles (single link set) */
 const coffeeProfiles = [
   { name: "Ethiopia Gedeb 250g", img: "images/ethiopia_gadeb.png", link: "https://bfc24.com/uk/store/product/43", tags: { fruit: 2, filter: 3, americano: 1 }, category: "filter" },
   { name: "Kenya AA Gikanda Kangocho 250g", img: "images/kenya_aa.png", link: "https://bfc24.com/uk/store/product/39", tags: { fruit: 2, filter: 3, americano: 1 }, category: "filter" },
@@ -152,45 +155,47 @@ const startBtn = document.getElementById("startBtn");
 /* ===========================
    Helpers
 =========================== */
-function $(sel, root = document) { return root.querySelector(sel); }
-function t(obj) { return typeof obj === "string" ? obj : (obj?.[userLang] || obj?.uk || obj?.en || ""); }
-function addTags(tags) {
-  for (const [k, v] of Object.entries(tags || {})) {
-    if (!userProfile[k]) userProfile[k] = 0;
-    userProfile[k] += v;
+function $(sel, root=document){ return root.querySelector(sel); }
+function addTags(tags){
+  for(const [k,v] of Object.entries(tags||{})){
+    if(!userProfile[k]) userProfile[k]=0;
+    userProfile[k]+=v;
   }
 }
-function cacheBust(src) {
+function cacheBust(src){
   const sep = src.includes("?") ? "&" : "?";
   return `${src}${sep}t=${Date.now()}`;
 }
-function addParams(urlStr, params) {
-  try {
-    const u = new URL(urlStr, window.location.origin);
-    Object.entries(params || {}).forEach(([k, v]) => u.searchParams.set(k, v));
+function addParams(urlStr, params){
+  try{
+    const u = new URL(urlStr); // абсолютні URL у нас
+    Object.entries(params||{}).forEach(([k,v])=>u.searchParams.set(k,v));
     return u.toString();
-  } catch {
+  }catch{
     const hasQ = urlStr.includes("?");
     const query = new URLSearchParams(params).toString();
     return urlStr + (hasQ ? "&" : "?") + query;
   }
 }
-function getRefParam() {
+function getRefParam(){
   const qp = new URLSearchParams(window.location.search);
   return qp.get("ref") || "quiz";
+}
+function t(obj){
+  return typeof obj === "string" ? obj : (obj?.[userLang] || obj?.uk || obj?.en || "");
 }
 
 /* ===========================
    Language selection
 =========================== */
-function applyStartTexts() {
+function applyStartTexts(){
   $("#main-title").textContent = startTranslations[userLang].mainTitle;
   startScreen.querySelector("h2").textContent = startTranslations[userLang].title;
   startScreen.querySelector("p").textContent = startTranslations[userLang].text;
   startBtn.textContent = startTranslations[userLang].button;
 }
-function selectLanguage(lang) {
-  userLang = (lang === "en") ? "en" : "uk"; // тільки uk/en
+function selectLanguage(lang){
+  userLang = (lang === "en") ? "en" : "uk";
   localStorage.setItem("coffeeQuizLang", userLang);
   langScreen.classList.add("hidden");
   applyStartTexts();
@@ -198,35 +203,33 @@ function selectLanguage(lang) {
 }
 
 /* ===========================
-   Render: Question & Result
+   Render
 =========================== */
-function showQuestion() {
-  // якщо вже вибрано filter і поточне питання — про напій, пропускаємо до результату
-  if (selectedMethod === "filter" && questions[currentQ]?.answers?.some(a => a.drink)) {
-    showResult();
-    return;
+function showQuestion(){
+  // якщо вибрано filter і текуще питання — про напій, пропускаємо до результату
+  if(selectedMethod==="filter" && questions[currentQ]?.answers?.some(a=>a.drink)){
+    showResult(); return;
   }
 
   const q = questions[currentQ];
-  if (!q) { showResult(); return; }
+  if(!q){ showResult(); return; }
 
   quizEl.innerHTML = `<h2>${t(q.text)}</h2>`;
   const g = document.createElement("div");
   g.className = "gallery";
 
-  q.answers.forEach(a => {
+  q.answers.forEach(a=>{
     const card = document.createElement("div");
     card.className = "gallery-item";
-    const imgSrc = cacheBust(a.img);
-    card.innerHTML = `<img src="${imgSrc}" alt=""><p>${t(a.text)}</p>`;
-    card.onclick = () => {
+    card.innerHTML = `<img src="${cacheBust(a.img)}" alt=""><p>${t(a.text)}</p>`;
+    card.onclick = ()=>{
       addTags(a.tags);
-      if (a.method) selectedMethod = a.method;
-      if (a.drink) selectedDrink = a.drink;
+      if(a.method) selectedMethod = a.method;
+      if(a.drink) selectedDrink = a.drink;
 
       currentQ++;
-      if (currentQ < questions.length) showQuestion();
-      else showResult();
+      if(currentQ < questions.length){ showQuestion(); }
+      else { showResult(); }
     };
     g.appendChild(card);
   });
@@ -234,76 +237,63 @@ function showQuestion() {
   quizEl.appendChild(g);
 }
 
-function showResult() {
+function showResult(){
   let coffees = [...coffeeProfiles];
 
-  // Режим "Фільтр": тільки дві конкретні фільтр-кави (одна основна + одна «також»)
-  if (selectedMethod === "filter") {
-    const onlyTwo = coffees.filter(c => c.category === "filter" && FILTER_ONLY_TWO.includes(c.name));
-
-    // порахуємо скори серед цих двох, щоб обрати релевантнішу
-    const scored = onlyTwo.map(c => {
-      let s = 0;
-      for (const [tag, w] of Object.entries(userProfile)) {
-        if (c.tags[tag]) s += Math.min(w, c.tags[tag]);
-      }
-      return { ...c, score: s };
-    }).sort((a, b) => b.score - a.score);
-
-    const main = scored[0] || onlyTwo[0];
-    const alt = scored[1] ? [scored[1]] : [];
+  // Особливий режим для filter: тільки дві фільтр-кави й вибір найкращої за тегами
+  if(selectedMethod==="filter"){
+    let two = coffees.filter(c=>c.category==="filter" && FILTER_ONLY_TWO.includes(c.name))
+                     .map(c=>{
+                       let s=0; for(const [tag,w] of Object.entries(userProfile)){ if(c.tags[tag]) s+=Math.min(w,c.tags[tag]); }
+                       return {...c, score:s};
+                     })
+                     .sort((a,b)=>b.score-a.score);
+    const main = two[0] || coffees.find(c=>FILTER_ONLY_TWO.includes(c.name));
+    const alt  = two[1] ? [two[1]] : [];
     renderFinal(main, alt);
     return;
   }
 
-  // фільтр-кави не показуємо при milk/cappuccino
-  if (selectedDrink === "milk" || selectedDrink === "cappuccino") {
-    coffees = coffees.filter(c => c.category !== "filter");
+  // фільтр-кави не показувати при milk/cappuccino
+  if(selectedDrink==="milk" || selectedDrink==="cappuccino"){
+    coffees = coffees.filter(c=>c.category!=="filter");
+  }
+  // при еспресо рідко показуємо filter (10%)
+  if(selectedDrink==="espresso"){
+    if(Math.random()>0.1) coffees = coffees.filter(c=>c.category!=="filter");
   }
 
-  // при еспресо — рідко (10%) показуємо filter
-  if (selectedDrink === "espresso" && Math.random() > 0.1) {
-    coffees = coffees.filter(c => c.category !== "filter");
-  }
+  const scored = coffees.map(c=>{
+    let s=0; for(const [tag,w] of Object.entries(userProfile)){ if(c.tags[tag]) s+=Math.min(w,c.tags[tag]); }
+    return {...c, score:s};
+  }).sort((a,b)=>b.score-a.score);
 
-  // скоринг
-  const scored = coffees.map(c => {
-    let s = 0;
-    for (const [tag, w] of Object.entries(userProfile)) {
-      if (c.tags[tag]) s += Math.min(w, c.tags[tag]);
-    }
-    return { ...c, score: s };
-  }).sort((a, b) => b.score - a.score);
-
-  const main = scored[0];
-  const recs = scored.slice(1, 3);
+  const main = scored[0] || coffees[0];
+  const recs = scored.slice(1,3);
   renderFinal(main, recs);
 }
 
-function renderFinal(mainCoffee, recList) {
-  if (!mainCoffee) {
-    // fallback: будь-яка фільтр або перша доступна
-    mainCoffee = coffeeProfiles.find(c => FILTER_ONLY_TWO.includes(c.name)) || coffeeProfiles[0];
-  }
-
+function renderFinal(mainCoffee, recList){
   const phraseArr = endPhrases[userLang] || endPhrases.uk;
-  const phrase = phraseArr[Math.floor(Math.random() * phraseArr.length)];
-  const btnText = (userLang === "uk") ? "Замовити" : "Order";
-  const alsoText = (userLang === "uk") ? "✨ Вам також може сподобатися:" : "✨ You may also like:";
-
+  const phrase = phraseArr[Math.floor(Math.random()*phraseArr.length)];
+  const btnText = startTranslations[userLang].order;
+  const alsoText = startTranslations[userLang].also;
   const ref = getRefParam();
+
   const mainLink = addParams(mainCoffee.link, { ref, t: Date.now() });
 
   let html = `
     <h2>${mainCoffee.name}</h2>
     <img src="${cacheBust(mainCoffee.img)}" alt="${mainCoffee.name}">
     <div class="final-phrase">${phrase}</div>
-    <a class="btn-order" href="${mainLink}" target="_blank" rel="noopener">☕ ${btnText}</a>
+    <a class="btn-order" href="${mainLink}" target="_blank" rel="noopener">
+      ☕ ${btnText}
+    </a>
   `;
 
-  if (recList && recList.length) {
+  if(recList && recList.length){
     html += `<h3>${alsoText}</h3><div class="gallery">`;
-    recList.forEach(c => {
+    recList.forEach(c=>{
       const lnk = addParams(c.link, { ref, t: Date.now() });
       html += `
         <a href="${lnk}" target="_blank" rel="noopener" class="gallery-item">
@@ -323,44 +313,36 @@ function renderFinal(mainCoffee, recList) {
 /* ===========================
    Bootstrapping
 =========================== */
-function initLanguageButtons() {
-  document.querySelectorAll(".btn-lang").forEach(btn => {
-    btn.addEventListener("click", () => {
+function initLanguageButtons(){
+  document.querySelectorAll(".btn-lang").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
       const lang = btn.getAttribute("data-lang");
       selectLanguage(lang);
     });
   });
 }
-
-function initStartButton() {
-  startBtn.addEventListener("click", () => {
+function initStartButton(){
+  startBtn.addEventListener("click", ()=>{
     startScreen.classList.add("hidden");
     resultEl.classList.add("hidden");
     quizEl.classList.remove("hidden");
 
     // reset state
-    currentQ = 0;
-    userProfile = {};
-    selectedMethod = null;
-    selectedDrink = null;
-
+    currentQ=0; userProfile={}; selectedMethod=null; selectedDrink=null;
     showQuestion();
   });
 }
 
-(function bootstrap() {
-  // якщо мова збережена — не показуємо екран вибору
+(function bootstrap(){
   const saved = localStorage.getItem("coffeeQuizLang");
-  if (saved === "uk" || saved === "en") {
+  if(saved==="uk" || saved==="en"){
     userLang = saved;
     langScreen.classList.add("hidden");
     applyStartTexts();
     startScreen.classList.remove("hidden");
-  } else {
-    // показуємо вибір мови
+  }else{
     langScreen.classList.remove("hidden");
   }
-
   initLanguageButtons();
   initStartButton();
 })();
