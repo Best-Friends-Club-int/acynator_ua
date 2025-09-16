@@ -1,3 +1,4 @@
+<!-- script.js -->
 /* ===========================
    Language (base = uk)
 =========================== */
@@ -119,7 +120,7 @@ const questions = [
   }
 ];
 
-// Профілі кави (єдині посилання, без UA/EU перемикача)// -
+// Профілі кави (єдині посилання)
 const coffeeProfiles = [
   { name: "Ethiopia Gedeb 250g", img: "images/ethiopia_gadeb.png", link: "https://bfc24.com/uk/store/product/43", tags: { fruit: 2, filter: 3, americano: 1 }, category: "filter" },
   { name: "Kenya AA Gikanda Kangocho 250g", img: "images/kenya_aa.png", link: "https://bfc24.com/uk/store/product/39", tags: { fruit: 2, filter: 3, americano: 1 }, category: "filter" },
@@ -137,7 +138,7 @@ const coffeeProfiles = [
   { name: "Mexico El Buho 250g", img: "images/mexico_el_buho.png", link: "https://bfc24.com/uk/store/product/38", tags: { choco: 1, dark: 1, espresso: 2, americano: 1 } }
 ];
 
-// Два єдині фільтр-варіанти для режиму "filter"
+// два фільтр-варіанти
 const FILTER_ONLY_TWO = ["Ethiopia Gedeb 250g", "Kenya AA Gikanda Kangocho 250g"];
 
 /* ===========================
@@ -168,24 +169,47 @@ function cacheBust(src) {
   const sep = src.includes("?") ? "&" : "?";
   return `${src}${sep}t=${Date.now()}`;
 }
-function addParams(urlStr, params) {
-  try {
-    const u = new URL(urlStr, window.location.origin);
-    Object.entries(params || {}).forEach(([k, v]) => u.searchParams.set(k, v));
-    return u.toString();
-  } catch {
-    // fallback simple concatenation
-    const hasQ = urlStr.includes("?");
-    const query = new URLSearchParams(params).toString();
-    return urlStr + (hasQ ? "&" : "?") + query;
-  }
-}
+
+// 1) Зберігаємо ref з першого заходу (якщо він був)
+(function persistRefOnce(){
+  const qs = new URLSearchParams(window.location.search);
+  const incomingRef = qs.get("ref");
+  if (incomingRef) localStorage.setItem("coffeeQuizRef", incomingRef);
+})();
+
+// 2) Дістаємо ref (пріоритет: URL -> localStorage -> 'quiz')
 function getRefParam() {
   const qp = new URLSearchParams(window.location.search);
-  return qp.get("ref") || "quiz";
+  return qp.get("ref") || localStorage.getItem("coffeeQuizRef") || "quiz";
 }
+
+// 3) Будуємо коректне посилання: видаляємо старі дублікати ref/t і додаємо свіжі
+function buildRefLink(baseUrl, extra = {}) {
+  try {
+    const u = new URL(baseUrl);            // абсолютні https://... — працює стабільно
+    // чистимо попередні значення
+    u.searchParams.delete("ref");
+    u.searchParams.delete("t");
+    // додаємо наш ref + анти-кеш
+    u.searchParams.set("ref", getRefParam());
+    u.searchParams.set("t", Date.now().toString());
+    // додаємо користувацькі (за потреби)
+    Object.entries(extra).forEach(([k, v]) => u.searchParams.set(k, v));
+    return u.toString();
+  } catch (e) {
+    // Якщо раптом відносний URL (не наш випадок), робимо fallback
+    const hasQ = baseUrl.includes("?");
+    const clean = baseUrl
+      .replace(/[?&]ref=[^&#]*/gi, "")
+      .replace(/[?&]t=\d+/gi, "")
+      .replace(/[?&]+$/, "");
+    const sep = clean.includes("?") ? "&" : (hasQ ? "" : "?");
+    const params = new URLSearchParams({ ref: getRefParam(), t: Date.now().toString(), ...extra }).toString();
+    return clean + sep + params;
+  }
+}
+
 function t(obj) {
-  // маленький помічник для мультимовних рядків
   return typeof obj === "string" ? obj : (obj?.[userLang] || obj?.uk || obj?.en || "");
 }
 
@@ -250,12 +274,11 @@ function showQuestion() {
 function showResult() {
   let coffees = [...coffeeProfiles];
 
-  // Особливий режим для filter: показуємо ТІЛЬКИ дві фільтр-кави (одна основна + одна «також сподобається»)
+  // Особливий режим для filter: лише дві фільтр-кави
   if (selectedMethod === "filter") {
     const filterCoffees = coffees
       .filter(c => c.category === "filter" && FILTER_ONLY_TWO.includes(c.name));
 
-    // якщо чомусь лишився 1 — просто показуємо її
     const main = filterCoffees[0] || coffees.find(c => FILTER_ONLY_TWO.includes(c.name));
     const alt = filterCoffees[1];
 
@@ -273,7 +296,7 @@ function showResult() {
     if (Math.random() > 0.1) coffees = coffees.filter(c => c.category !== "filter");
   }
 
-  // Підрахунок скору (за тегами)
+  // Підрахунок скору
   const scored = coffees.map(c => {
     let s = 0;
     for (const [tag, weight] of Object.entries(userProfile)) {
@@ -289,7 +312,6 @@ function showResult() {
 
 function renderFinal(mainCoffee, recList) {
   if (!mainCoffee) {
-    // fallback: якщо щось пішло не так
     mainCoffee = coffeeProfiles.find(c => c.name === FILTER_ONLY_TWO[0]) || coffeeProfiles[0];
   }
 
@@ -298,8 +320,7 @@ function renderFinal(mainCoffee, recList) {
   const btnText = (userLang === "uk") ? "Замовити" : "Order";
   const alsoText = (userLang === "uk") ? "✨ Вам також може сподобатися:" : "✨ You may also like:";
 
-  const ref = getRefParam();
-  const mainLink = addParams(mainCoffee.link, { ref, t: Date.now() });
+  const mainLink = buildRefLink(mainCoffee.link);
 
   let html = `
     <h2>${mainCoffee.name}</h2>
@@ -313,7 +334,7 @@ function renderFinal(mainCoffee, recList) {
   if (recList && recList.length) {
     html += `<h3>${alsoText}</h3><div class="gallery">`;
     recList.forEach(c => {
-      const lnk = addParams(c.link, { ref, t: Date.now() });
+      const lnk = buildRefLink(c.link);
       html += `
         <a href="${lnk}" target="_blank" rel="noopener" class="gallery-item">
           <img src="${cacheBust(c.img)}" alt="${c.name}">
@@ -347,7 +368,7 @@ function initStartButton() {
     resultEl.classList.add("hidden");
     quizEl.classList.remove("hidden");
 
-    // Скидаємо стан
+    // Скидання стану
     currentQ = 0;
     userProfile = {};
     selectedMethod = null;
@@ -358,7 +379,6 @@ function initStartButton() {
 }
 
 (function bootstrap() {
-  // Якщо мова збережена — застосуємо та покажемо старт
   const saved = localStorage.getItem("coffeeQuizLang");
   if (saved === "uk" || saved === "en") {
     userLang = saved;
@@ -366,7 +386,6 @@ function initStartButton() {
     applyStartTexts();
     startScreen.classList.remove("hidden");
   } else {
-    // Базово — показуємо екран вибору мов (укр як базова, але користувач може натиснути en)
     langScreen.classList.remove("hidden");
   }
 
