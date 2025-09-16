@@ -17,32 +17,30 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <!-- Головний заголовок (оновлюється при виборі мови) -->
   <h1>☕ <span id="main-title">Твій кавовий настрій</span></h1>
 
-  <!-- Екран вибору мови -->
+  <!-- Language select -->
   <div id="lang-screen">
-    <h2>🌍 Обери мову / Choose language</h2>
+    <h2>🌍 Обери мову / Choose your language</h2>
     <div class="lang-buttons">
-      <button class="btn-lang" data-lang="uk">Українська</button>
-      <button class="btn-lang" data-lang="en">English</button>
+      <button class="btn-lang" data-lang="uk">🇺🇦 Українська</button>
+      <button class="btn-lang" data-lang="en">🇬🇧 English</button>
     </div>
   </div>
 
-  <!-- Стартовий екран -->
+  <!-- Start screen -->
   <div id="start-screen" class="hidden">
     <h2></h2>
     <p></p>
     <button id="startBtn"></button>
   </div>
 
-  <!-- Квіз -->
+  <!-- Quiz -->
   <div id="quiz" class="hidden"></div>
 
-  <!-- Результат -->
+  <!-- Result -->
   <div id="result" class="hidden"></div>
 
-  <!-- Скрипт -->
   <script src="script.js" defer></script>
 </body>
 </html>
