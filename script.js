@@ -1,10 +1,8 @@
-<!-- script.js -->
 /* ===========================
    Language (base = uk)
 =========================== */
 let userLang = "uk"; // базова мова
 
-// Тексти стартового екрану
 const startTranslations = {
   uk: {
     mainTitle: "Твій кавовий настрій",
@@ -20,7 +18,6 @@ const startTranslations = {
   }
 };
 
-// Фрази для фіналу
 const endPhrases = {
   uk: [
     "😏 Чудовий вибір! Замов і зареєструйся в нашому клубі, щоб отримати ще більше!",
@@ -41,8 +38,6 @@ const endPhrases = {
 /* ===========================
    Quiz data
 =========================== */
-
-// Fun + ключові питання (мультимовні)
 const questions = [
   {
     text: { uk: "🍰 Улюблений десерт дитинства?", en: "🍰 Childhood favorite dessert?" },
@@ -99,7 +94,7 @@ const questions = [
       { text: { uk: "Подорож у нове місто", en: "Travel to a new city" }, tags: {}, img: "images/weekend_trip.png" }
     ]
   },
-  // Ключові:
+  // ключові:
   {
     text: { uk: "🫖 Який метод заварювання тобі ближче?", en: "🫖 Which brew method do you prefer?" },
     answers: [
@@ -120,7 +115,7 @@ const questions = [
   }
 ];
 
-// Профілі кави (єдині посилання)
+// Профілі кави
 const coffeeProfiles = [
   { name: "Ethiopia Gedeb 250g", img: "images/ethiopia_gadeb.png", link: "https://bfc24.com/uk/store/product/43", tags: { fruit: 2, filter: 3, americano: 1 }, category: "filter" },
   { name: "Kenya AA Gikanda Kangocho 250g", img: "images/kenya_aa.png", link: "https://bfc24.com/uk/store/product/39", tags: { fruit: 2, filter: 3, americano: 1 }, category: "filter" },
@@ -138,7 +133,7 @@ const coffeeProfiles = [
   { name: "Mexico El Buho 250g", img: "images/mexico_el_buho.png", link: "https://bfc24.com/uk/store/product/38", tags: { choco: 1, dark: 1, espresso: 2, americano: 1 } }
 ];
 
-// два фільтр-варіанти
+// у режимі filter показуємо лише ці дві
 const FILTER_ONLY_TWO = ["Ethiopia Gedeb 250g", "Kenya AA Gikanda Kangocho 250g"];
 
 /* ===========================
@@ -156,6 +151,58 @@ const resultEl = document.getElementById("result");
 const startBtn = document.getElementById("startBtn");
 
 /* ===========================
+   Ref handling (robust)
+=========================== */
+// 1) Зберігаємо ref з першого заходу (якщо був)
+(function persistRefOnce() {
+  const qs = new URLSearchParams(window.location.search);
+  const incomingRef = qs.get("ref");
+  if (incomingRef) localStorage.setItem("coffeeQuizRef", incomingRef);
+})();
+
+// 2) Актуальний ref: URL -> localStorage -> 'quiz'
+function getRefParam() {
+  const qs = new URLSearchParams(window.location.search);
+  const raw = qs.get("ref") || localStorage.getItem("coffeeQuizRef") || "quiz";
+  // санітизуємо (тільки букви/цифри/_-.)
+  const safe = String(raw).match(/[A-Za-z0-9_.-]+/g)?.join("") || "quiz";
+  return safe.slice(0, 64); // обрізаемо на всяк
+}
+
+// 3) Додаємо ref/t та дубль у hash; чистимо старі
+function buildRefLink(baseUrl, extra = {}) {
+  try {
+    const u = new URL(baseUrl); // абсолютний https://...
+    // прибираємо старі маркери
+    ["ref", "t", "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"]
+      .forEach(k => u.searchParams.delete(k));
+    // свіжі параметри
+    u.searchParams.set("ref", getRefParam());
+    u.searchParams.set("t", Date.now().toString());
+    Object.entries(extra).forEach(([k, v]) => u.searchParams.set(k, v));
+    // дублюємо в hash (на випадок SPA/кешу, який ігнорує query)
+    const h = new URLSearchParams(u.hash.replace(/^#/, ""));
+    h.set("ref", getRefParam());
+    h.set("t", Date.now().toString());
+    u.hash = h.toString();
+    return u.toString();
+  } catch {
+    // fallback для відносного URL
+    const clean = baseUrl
+      .replace(/[?&](ref|t|utm_[^=]+)=[^&#]*/gi, "")
+      .replace(/[?&]+$/, "");
+    const sep = clean.includes("?") ? "&" : "?";
+    const qp = new URLSearchParams({ ref: getRefParam(), t: Date.now().toString(), ...extra }).toString();
+    return `${clean}${sep}${qp}#ref=${getRefParam()}&t=${Date.now().toString()}`;
+  }
+}
+
+function cacheBust(src) {
+  const sep = src.includes("?") ? "&" : "?";
+  return `${src}${sep}t=${Date.now()}`;
+}
+
+/* ===========================
    Helpers
 =========================== */
 function $(sel, root = document) { return root.querySelector(sel); }
@@ -165,50 +212,6 @@ function addTags(tags) {
     userProfile[k] += v;
   }
 }
-function cacheBust(src) {
-  const sep = src.includes("?") ? "&" : "?";
-  return `${src}${sep}t=${Date.now()}`;
-}
-
-// 1) Зберігаємо ref з першого заходу (якщо він був)
-(function persistRefOnce(){
-  const qs = new URLSearchParams(window.location.search);
-  const incomingRef = qs.get("ref");
-  if (incomingRef) localStorage.setItem("coffeeQuizRef", incomingRef);
-})();
-
-// 2) Дістаємо ref (пріоритет: URL -> localStorage -> 'quiz')
-function getRefParam() {
-  const qp = new URLSearchParams(window.location.search);
-  return qp.get("ref") || localStorage.getItem("coffeeQuizRef") || "quiz";
-}
-
-// 3) Будуємо коректне посилання: видаляємо старі дублікати ref/t і додаємо свіжі
-function buildRefLink(baseUrl, extra = {}) {
-  try {
-    const u = new URL(baseUrl);            // абсолютні https://... — працює стабільно
-    // чистимо попередні значення
-    u.searchParams.delete("ref");
-    u.searchParams.delete("t");
-    // додаємо наш ref + анти-кеш
-    u.searchParams.set("ref", getRefParam());
-    u.searchParams.set("t", Date.now().toString());
-    // додаємо користувацькі (за потреби)
-    Object.entries(extra).forEach(([k, v]) => u.searchParams.set(k, v));
-    return u.toString();
-  } catch (e) {
-    // Якщо раптом відносний URL (не наш випадок), робимо fallback
-    const hasQ = baseUrl.includes("?");
-    const clean = baseUrl
-      .replace(/[?&]ref=[^&#]*/gi, "")
-      .replace(/[?&]t=\d+/gi, "")
-      .replace(/[?&]+$/, "");
-    const sep = clean.includes("?") ? "&" : (hasQ ? "" : "?");
-    const params = new URLSearchParams({ ref: getRefParam(), t: Date.now().toString(), ...extra }).toString();
-    return clean + sep + params;
-  }
-}
-
 function t(obj) {
   return typeof obj === "string" ? obj : (obj?.[userLang] || obj?.uk || obj?.en || "");
 }
@@ -224,7 +227,7 @@ function applyStartTexts() {
 }
 
 function selectLanguage(lang) {
-  userLang = (lang === "en") ? "en" : "uk"; // тільки uk/en
+  userLang = (lang === "en") ? "en" : "uk";
   localStorage.setItem("coffeeQuizLang", userLang);
   langScreen.classList.add("hidden");
   applyStartTexts();
@@ -235,7 +238,6 @@ function selectLanguage(lang) {
    Render: Question & Result
 =========================== */
 function showQuestion() {
-  // якщо вже вибрано filter і поточне питання — про напій, пропускаємо до результату
   if (selectedMethod === "filter" && questions[currentQ]?.answers?.some(a => a.drink)) {
     showResult();
     return;
@@ -251,19 +253,15 @@ function showQuestion() {
   q.answers.forEach(a => {
     const card = document.createElement("div");
     card.className = "gallery-item";
-    const imgSrc = cacheBust(a.img);
-    card.innerHTML = `<img src="${imgSrc}" alt=""><p>${t(a.text)}</p>`;
+    card.innerHTML = `<img src="${cacheBust(a.img)}" alt=""><p>${t(a.text)}</p>`;
     card.onclick = () => {
       addTags(a.tags);
       if (a.method) selectedMethod = a.method;
       if (a.drink) selectedDrink = a.drink;
 
       currentQ++;
-      if (currentQ < questions.length) {
-        showQuestion();
-      } else {
-        showResult();
-      }
+      if (currentQ < questions.length) showQuestion();
+      else showResult();
     };
     g.appendChild(card);
   });
@@ -274,29 +272,25 @@ function showQuestion() {
 function showResult() {
   let coffees = [...coffeeProfiles];
 
-  // Особливий режим для filter: лише дві фільтр-кави
+  // режим filter: тільки дві фільтр-кави
   if (selectedMethod === "filter") {
-    const filterCoffees = coffees
-      .filter(c => c.category === "filter" && FILTER_ONLY_TWO.includes(c.name));
-
+    const filterCoffees = coffees.filter(c => c.category === "filter" && FILTER_ONLY_TWO.includes(c.name));
     const main = filterCoffees[0] || coffees.find(c => FILTER_ONLY_TWO.includes(c.name));
     const alt = filterCoffees[1];
-
     renderFinal(main, alt ? [alt] : []);
     return;
   }
 
-  // Фільтр-кави не показуємо при milk/cappuccino
+  // milk/cappuccino — без фільтр-кави
   if (selectedDrink === "milk" || selectedDrink === "cappuccino") {
     coffees = coffees.filter(c => c.category !== "filter");
   }
 
-  // При еспресо — дуже рідко (10%) показуємо filter
+  // espresso — фільтр показуємо рідко (10%)
   if (selectedDrink === "espresso") {
     if (Math.random() > 0.1) coffees = coffees.filter(c => c.category !== "filter");
   }
 
-  // Підрахунок скору
   const scored = coffees.map(c => {
     let s = 0;
     for (const [tag, weight] of Object.entries(userProfile)) {
@@ -315,8 +309,8 @@ function renderFinal(mainCoffee, recList) {
     mainCoffee = coffeeProfiles.find(c => c.name === FILTER_ONLY_TWO[0]) || coffeeProfiles[0];
   }
 
-  const phraseArr = endPhrases[userLang] || endPhrases.uk;
-  const phrase = phraseArr[Math.floor(Math.random() * phraseArr.length)];
+  const phrases = endPhrases[userLang] || endPhrases.uk;
+  const phrase = phrases[Math.floor(Math.random() * phrases.length)];
   const btnText = (userLang === "uk") ? "Замовити" : "Order";
   const alsoText = (userLang === "uk") ? "✨ Вам також може сподобатися:" : "✨ You may also like:";
 
@@ -326,7 +320,7 @@ function renderFinal(mainCoffee, recList) {
     <h2>${mainCoffee.name}</h2>
     <img src="${cacheBust(mainCoffee.img)}" alt="${mainCoffee.name}">
     <div class="final-phrase">${phrase}</div>
-    <a href="${mainLink}" target="_blank" rel="noopener">
+    <a href="${mainLink}" target="_blank" rel="noopener noreferrer">
       <button>☕ ${btnText}</button>
     </a>
   `;
@@ -336,7 +330,7 @@ function renderFinal(mainCoffee, recList) {
     recList.forEach(c => {
       const lnk = buildRefLink(c.link);
       html += `
-        <a href="${lnk}" target="_blank" rel="noopener" class="gallery-item">
+        <a href="${lnk}" target="_blank" rel="noopener noreferrer" class="gallery-item">
           <img src="${cacheBust(c.img)}" alt="${c.name}">
           <p>${c.name}</p>
         </a>
@@ -368,7 +362,6 @@ function initStartButton() {
     resultEl.classList.add("hidden");
     quizEl.classList.remove("hidden");
 
-    // Скидання стану
     currentQ = 0;
     userProfile = {};
     selectedMethod = null;
