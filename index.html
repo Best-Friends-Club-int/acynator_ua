@@ -1,15 +1,49 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Твоя ідеальна кава</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Твій кавовий настрій</title>
+
+  <!-- Anti-cache hints -->
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0"/>
+  <meta http-equiv="Pragma" content="no-cache"/>
+  <meta http-equiv="Expires" content="0"/>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Geologica:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="style.css"/>
 </head>
 <body>
-  <h1>☕ Твоя ідеальна кава </h1>
-  <div id="quiz"></div>
+  <!-- Main title (updates on language selection) -->
+  <h1>☕ <span id="main-title">Твій кавовий настрій</span></h1>
+
+  <!-- Language selection (укр — базово) -->
+  <div id="lang-screen">
+    <h2>🌍 Обери мову</h2>
+    <p>Почнемо з вибору мови інтерфейсу</p>
+    <div class="lang-buttons">
+      <button class="btn-lang" data-lang="uk">Українська</button>
+      <button class="btn-lang" data-lang="en">English</button>
+    </div>
+  </div>
+
+  <!-- Start screen (hidden by default) -->
+  <div id="start-screen" class="hidden">
+    <h2></h2>
+    <p></p>
+    <button id="startBtn"></button>
+  </div>
+
+  <!-- Quiz -->
+  <div id="quiz" class="hidden"></div>
+
+  <!-- Result -->
   <div id="result" class="hidden"></div>
+
+  <!-- Script -->
   <script src="script.js" defer></script>
 </body>
 </html>
